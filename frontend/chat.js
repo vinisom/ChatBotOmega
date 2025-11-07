@@ -1,4 +1,3 @@
-
 document.addEventListener("DOMContentLoaded", function () {
   const chatBtn = document.getElementById("chat-btn");
   const chatWindow = document.getElementById("chat-window");
@@ -6,6 +5,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatInput = document.getElementById("chat-input");
   const chatMessages = document.getElementById("chat-messages");
   const closeBtn = document.getElementById("chat-close-btn");
+
+  let etapa = "inicio";
+  let nomeCliente = "";
+  let emailCliente = "";
+  let pedido = "";
 
   chatBtn.addEventListener("click", () => {
     chatWindow.style.display = "flex";
@@ -27,13 +31,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function iniciarConversa() {
-    adicionarMensagemBot("Olá! 👋 Sou o chatbot de suporte Omega. Vamos começar seu atendimento.");
-    setTimeout(() => adicionarMensagemBot("Como posso te ajudar hoje?", [
-      "Problema com entrega",
-      "Produto com defeito",
-      "Quero cancelar meu pedido",
-      "Outro assunto"
-    ]), 800);
+    etapa = "nome";
+    adicionarMensagemBot("Olá! Qual é o seu nome?");
   }
 
   function adicionarMensagemUsuario(mensagem) {
@@ -71,24 +70,119 @@ document.addEventListener("DOMContentLoaded", function () {
     rolarChat();
   }
 
+  function validarEmail(email) {
+    return /\S+@\S+\.\S+/.test(email);
+  }
+
   function processarMensagem(mensagem) {
     const msg = mensagem.toLowerCase();
 
-    if (msg.includes("entrega")) {
-      setTimeout(() => adicionarMensagemBot("Por favor, digite o número do seu pedido:"), 500);
-    } else if (msg.includes("defeito")) {
-      setTimeout(() => adicionarMensagemBot("Sinto muito pelo transtorno. Informe o número do pedido e uma breve descrição do defeito."), 500);
-    } else if (msg.includes("cancelar")) {
-      setTimeout(() => adicionarMensagemBot("Você deseja cancelar o pedido inteiro ou apenas alguns produtos?"), 500);
-    } else if (msg.includes("outro")) {
-      setTimeout(() => adicionarMensagemBot("Descreva com mais detalhes sua solicitação para que eu possa te ajudar melhor."), 500);
-    } else {
-      setTimeout(() => adicionarMensagemBot("Obrigado. Em breve nossa equipe analisará sua solicitação."), 500);
+    switch (etapa) {
+      case "nome":
+        nomeCliente = mensagem;
+        etapa = "email";
+        adicionarMensagemBot(`Prazer, ${nomeCliente}. Agora, digite seu e-mail:`);
+        break;
+
+      case "email":
+        if (!validarEmail(mensagem)) {
+          adicionarMensagemBot("E-mail inválido. Por favor, digite um e-mail válido.");
+        } else {
+          emailCliente = mensagem;
+          etapa = "motivo";
+          adicionarMensagemBot("Como posso te ajudar?", [
+            "Problema com entrega",
+            "Produto com defeito",
+            "Quero cancelar meu pedido",
+            "Outro"
+          ]);
+        }
+        break;
+
+      case "motivo":
+        if (msg.includes("entrega")) {
+          etapa = "pedido_entrega";
+          adicionarMensagemBot("Por favor, informe o número do seu pedido:");
+        } else if (msg.includes("defeito")) {
+          etapa = "pedido_defeito";
+          adicionarMensagemBot("Informe o número do pedido com defeito:");
+        } else if (msg.includes("cancelar")) {
+          etapa = "cancelamento_tipo";
+          adicionarMensagemBot("Você deseja cancelar o pedido inteiro ou apenas parte dele?", [
+            "Pedido inteiro", "Apenas alguns produtos"
+          ]);
+        } else {
+          etapa = "descricao_outro";
+          adicionarMensagemBot("Descreva com mais detalhes sua solicitação:");
+        }
+        break;
+
+      case "pedido_entrega":
+        pedido = mensagem;
+        etapa = "final";
+        finalizarAtendimento();
+        break;
+
+      case "pedido_defeito":
+        pedido = mensagem;
+        etapa = "descricao_defeito";
+        adicionarMensagemBot("Descreva o defeito encontrado no produto:");
+        break;
+
+      case "descricao_defeito":
+        etapa = "final";
+        finalizarAtendimento();
+        break;
+
+      case "cancelamento_tipo":
+        etapa = "final";
+        finalizarAtendimento();
+        break;
+
+      case "descricao_outro":
+        etapa = "final";
+        finalizarAtendimento();
+        break;
+
+      case "avaliacao":
+        adicionarMensagemBot("Muito obrigado! Sua avaliação foi registrada. Deseja encerrar ou reiniciar o atendimento?", [
+          "Encerrar", "Reiniciar"
+        ]);
+        etapa = "fim";
+        break;
+
+      case "fim":
+        if (msg.includes("encerrar")) {
+          adicionarMensagemBot("Atendimento encerrado. Até logo!");
+        } else if (msg.includes("reiniciar")) {
+          resetarChat();
+        }
+        break;
+
+      default:
+        adicionarMensagemBot("Obrigado. Nossa equipe analisará sua solicitação.");
     }
+  }
+
+  function finalizarAtendimento() {
+    adicionarMensagemBot("Obrigado pelo seu relato, entraremos em contato em breve.");
+    etapa = "avaliacao";
+    setTimeout(() => {
+      adicionarMensagemBot("Como você avalia nosso atendimento?", [
+        "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"
+      ]);
+    }, 800);
+  }
+
+  function resetarChat() {
+    chatMessages.innerHTML = "";
+    nomeCliente = "";
+    emailCliente = "";
+    pedido = "";
+    iniciarConversa();
   }
 
   function rolarChat() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
-
 });
