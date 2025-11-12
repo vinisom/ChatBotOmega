@@ -145,6 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
 
       case "avaliacao":
+        // Após o cliente avaliar, agora pergunta se quer encerrar ou reiniciar
         adicionarMensagemBot("Muito obrigado! Sua avaliação foi registrada. Deseja encerrar ou reiniciar o atendimento?", [
           "Encerrar", "Reiniciar"
         ]);
